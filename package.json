@@ -1,0 +1,9 @@
+{
+  "name": "admission",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "python -m streamlit run streamlit_app.py",
+    "navratri": "python3 server.py"
+  }
+}

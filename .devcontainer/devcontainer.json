@@ -1,0 +1,18 @@
+{
+  "name": "admission",
+  "forwardPorts": [8501],
+  "portsAttributes": {
+    "8501": {
+      "label": "Streamlit App",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "postCreateCommand": "pip install -r /dev/null >/dev/null 2>&1 || true",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  }
+}
