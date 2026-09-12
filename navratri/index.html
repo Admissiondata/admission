@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ગરબા પાસ – નવરાત્રી ૨૦૨૬</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -119,12 +120,23 @@
   .pass-sheet {
     background: #fff;
     border: 2px solid var(--gold);
-    border-radius: 14px;
+    border-radius: 18px;
     overflow: hidden;
     max-width: 560px;
     margin: 14px auto;
     box-shadow: 0 4px 18px rgba(0,0,0,.15);
+    position: relative;
+    background-size: cover;
+    background-position: center;
   }
+  .pass-sheet::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.82);
+    z-index: 0;
+  }
+  .pass-head, .pass-body, .pass-footer { position: relative; z-index: 1; }
   .pass-head {
     background: linear-gradient(135deg, var(--maroon), var(--maroon-dark));
     color: #fff;
@@ -134,15 +146,16 @@
   .pass-head h2 { font-size: 1.25rem; margin-bottom: 2px; }
   .pass-head .dates { font-size: .9rem; opacity: .95; }
   .pass-body { padding: 18px 22px; }
+  .pass-top { display: flex; gap: 12px; align-items: center; padding-bottom: 8px; }
   .pass-no { text-align: right; font-weight: 700; color: var(--maroon); font-size: 1.05rem; margin-bottom: 8px; }
   .pass-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dotted #ddd7c8; font-size: .98rem; }
   .pass-row .k { color: var(--muted); }
   .pass-row .v { font-weight: 700; text-align: right; }
-  .timing { margin-top: 12px; background: #fbf4e4; border-radius: 8px; padding: 10px 12px; font-size: .95rem; }
   .pass-sign { display: flex; justify-content: space-between; margin-top: 22px; font-size: .9rem; text-align: center; }
   .pass-sign div { width: 46%; }
   .pass-sign .line { border-top: 1.5px solid var(--ink); margin-top: 34px; padding-top: 4px; color: var(--muted); font-size: .82rem; }
-  .stamp { text-align: center; margin-top: 12px; font-size: .9rem; color: var(--maroon); font-weight: 700; }
+  .pass-footer { padding: 14px 22px 18px; text-align: center; font-size: .8rem; color: var(--muted); }
+  .pass-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,.88); padding: 4px; margin: 0 auto 8px; }
 
   /* table */
   .table-wrap { overflow: auto; }
@@ -154,6 +167,18 @@
   .count-box { background: #fff; border: 1px solid #e0d6c4; border-radius: 10px; padding: 10px 16px; text-align: center; }
   .count-box .n { font-size: 1.5rem; font-weight: 700; color: var(--maroon); }
   .count-box .t { font-size: .82rem; color: var(--muted); }
+
+  .dashboard-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px;
+  }
+  .dash-card {
+    background: linear-gradient(135deg, #fffaf0, #fff);
+    border: 1px solid #e7d5a8; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  }
+  .dash-card .tag { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+  .dash-card h3 { color: var(--maroon); font-size: 1.05rem; margin-bottom: 6px; }
+  .dash-card p { font-size: .9rem; color: var(--ink); line-height: 1.5; }
+  .dash-card strong { color: var(--maroon); }
 
   .msg { padding: 12px 16px; border-radius: 8px; margin: 12px 0; font-size: .95rem; }
   .msg.ok { background: #e7f6ec; border: 1px solid #b5dcbe; color: var(--green); }
@@ -217,6 +242,68 @@
 
   <!-- ============ FORM VIEW ============ -->
   <section id="view-form">
+    <div class="card">
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="tag">Operator</div>
+          <h3>ફોર્મ એન્ટ્રી</h3>
+          <p>નવા રજીસ્ટ્રેશન આપો, ફોટો અપલોડ કરો અને કાયમી / હાલનું સરનામું ભરો.</p>
+        </div>
+        <div class="dash-card">
+          <div class="tag">Status</div>
+          <h3>પેન્ડિંગ પર સાવધાની</h3>
+          <p>દરેક નવો રેકોર્ડ <strong>pending</strong> તરીકે સબમિટ થાય છે અને approval માટે રાહ જુએ છે.</p>
+        </div>
+        <div class="dash-card">
+          <div class="tag">Task</div>
+          <h3>QR + photo</h3>
+          <p>પ્લોટ રેકોર્ડનો QR અને લેટેસ્ટ ફોટો later authority માટેアップલોડ કરી શકાય છે.</p>
+        </div>
+      </div>
+      <h2>🔐 લોગિન અને યુઝર إنشاء</h2>
+      <div class="settings-grid">
+        <div>
+          <label>યુઝરનેમ</label>
+          <input type="text" id="loginUser" placeholder="demo_admin">
+        </div>
+        <div>
+          <label>પાસવર્ડ</label>
+          <input type="password" id="loginPass" placeholder="********">
+        </div>
+      </div>
+      <div class="center no-print" style="margin-top:16px">
+        <button type="button" class="btn" onclick="loginUser()">🔑 લોગિન</button>
+        <button type="button" class="btn ghost" onclick="logoutUser()" style="margin-left:8px;display:none" id="logoutBtn">🚪 લોગ આઉટ</button>
+      </div>
+      <div id="userStatus" style="margin-top:10px; display:none; font-size:.9rem; color:var(--muted)"></div>
+      <div id="authMsg"></div>
+      <div id="roleDashboardInfo" class="note" style="margin-top:12px; display:none"></div>
+      <div class="note" style="margin-top:12px">
+        નવો યુઝર બનાવવો હોય તો_UID/role: <b>admin</b>, <b>authority</b>, <b>operator</b> પસંદ કરી δημιουργો.
+      </div>
+      <div class="settings-grid" style="margin-top:16px">
+        <div>
+          <label>નવો યુઝરનેમ</label>
+          <input type="text" id="newUserName" placeholder="new_manager">
+        </div>
+        <div>
+          <label>રોલ</label>
+          <select id="newUserRole">
+            <option value="operator">operator</option>
+            <option value="authority">authority</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div>
+          <label>નવો પાસવર્ડ</label>
+          <input type="password" id="newUserPass" placeholder="********">
+        </div>
+      </div>
+      <div class="center no-print" style="margin-top:12px">
+        <button type="button" class="btn ghost" onclick="createUserAccount()">👤 યુઝર બનાવો</button>
+      </div>
+    </div>
+
     <form id="passForm">
       <div class="card">
         <h2>📋 અરજ પત્રક</h2>
@@ -248,12 +335,28 @@
         <label>મોબાઈલ નંબર <span style="color:#a12626">*</span> <small style="font-weight:400;color:var(--muted)">(ફરજિયાત)</small></label>
         <input type="tel" id="f_mobile" required placeholder="10 આંકડાનો નંબર" pattern="[0-9]{10}" maxlength="10" inputmode="numeric">
 
+        <div class="row">
+          <div>
+            <label>યૂઝર પ્રકાર <span style="color:#a12626">*</span></label>
+            <select id="f_role">
+              <option value="operator">ડેટા એન્ટ્રી ઓપરેટર</option>
+              <option value="authority">અથોરિટી</option>
+              <option value="admin">એડમિન</option>
+            </select>
+          </div>
+          <div>
+            <label>સ્ટેટસ</label>
+            <input type="text" id="f_status" value="pending" readonly style="background:#f8f5ef;color:var(--muted)">
+          </div>
+        </div>
+
         <h2 style="margin-top:22px">🖼️ ફોટો અને આધાર</h2>
         <label>ખેલૈયાનો ફોટો <small style="font-weight:400;color:var(--muted)">(વૈકલ્પિક - પાસ પર છાપાશે)</small></label>
         <div class="upload-box">
           <input type="file" id="f_photo" accept="image/*" capture="user" class="file-input">
           <img id="photoPrev" class="file-prev empty" alt="">
         </div>
+        <div class="note" style="margin-top:10px">📷 લાઈવ કેમેરા અથવા અપલોડ બંને પસંદ કરી શકો છો. ફોટો સબમિટ પછી તેની પ્રિવ્યૂ મેળવો.</div>
         <div class="row" style="margin-top:16px">
           <div>
             <label>આધાર કાર્ડ નંબર <small style="font-weight:400;color:var(--muted)">(12 આંકડા)</small></label>
@@ -342,6 +445,24 @@
   <!-- ============ PASS VIEW ============ -->
   <section id="view-pass" style="display:none">
     <div class="card">
+      <div id="authorityDashboardTitle" class="note" style="display:none; margin-bottom:12px"></div>
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="tag">Authority</div>
+          <h3>પાસ રિવ્યૂ</h3>
+          <p>પર્સનલ ડિટેલ્સ, QR, અને આપવામાં આવેલ ફોટો સાથે પાસnuts ચકાસો.</p>
+        </div>
+        <div class="dash-card">
+          <div class="tag">Review</div>
+          <h3>Approval</h3>
+          <p>પેન્ડિંગ રેકોર્ડ્સ ચકાસો અને <strong>approved</strong> અથવા <strong>rejected</strong> કરો.</p>
+        </div>
+        <div class="dash-card">
+          <div class="tag">Action</div>
+          <h3>Latest photo</h3>
+          <p>QR scan કરીને કસ્ટમરનો નવીનતમ ફોટો રેકોર્ડમાં અપડેટ કરો.</p>
+        </div>
+      </div>
       <h2>🎟️ પાસ શોધો</h2>
       <label>અરજ પત્રક નંબર</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -350,12 +471,46 @@
       </div>
       <p style="font-size:.85rem;color:var(--muted);margin-top:10px">અરજ પત્રક નંબર ફોર્મ સબમિટ કર્યા પછી મળે છે.</p>
     </div>
+
+    <div class="card">
+      <h2>📷 QR થી લેટેસ્ટ ફોટો અપલોડ કરો</h2>
+      <label>QR કોડ (પાસનો QR) પસંદ કરો</label>
+      <input type="file" id="scanQrFile" accept="image/*" capture="environment" class="file-input">
+      <div id="scanQrStatus" style="margin-top:10px"></div>
+      <div id="qrPhotoUploadBox" style="display:none; margin-top:16px; padding-top:12px; border-top:1px dashed #e5dccb;">
+        <div class="note" id="qrPersonInfo">QR રીકગ્નાઇઝ થયું.</div>
+        <label style="margin-top:12px">નવો લેટેસ્ટ ફોટો પસંદ કરો</label>
+        <input type="file" id="latestPhotoInput" accept="image/*" capture="user" class="file-input">
+        <div class="center" style="margin-top:12px">
+          <button type="button" class="btn" onclick="saveLatestPhoto()">✅ નવો ફોટો અપલોડ કરો</button>
+        </div>
+      </div>
+    </div>
+
     <div id="passResult"></div>
   </section>
 
   <!-- ============ ADMIN VIEW ============ -->
   <section id="view-admin" style="display:none">
     <div class="card">
+      <div id="adminDashboardTitle" class="note" style="display:none; margin-bottom:12px"></div>
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="tag">Control</div>
+          <h3>Admin</h3>
+          <p>બધા રજીસ્ટ્રેશન, approvals, branding, logo, background અને settings મેનેજ કરો.</p>
+        </div>
+        <div class="dash-card">
+          <div class="tag">Reports</div>
+          <h3>Data</h3>
+          <p>CSV, Excel અને JSON export સાથે આખી લેડ gerનો ઉપયોગ કરો.</p>
+        </div>
+        <div class="dash-card">
+          <div class="tag">Security</div>
+          <h3>Pin</h3>
+          <p>ડિલીટ, સાફ, એડિટ અને પુનઃસ્થાપિત માટે correct admin PINનો ઉપયોગ કરો.</p>
+        </div>
+      </div>
       <h2>⚙️ ફોર્મ અને પાસ સેટિંગ્સ</h2>
       <div class="settings-grid">
         <div>
@@ -382,6 +537,11 @@
           <input type="file" id="s_logo" accept="image/*">
           <img id="s_logoPrev" class="logo-prev" alt="" style="display:none">
         </div>
+        <div>
+          <label>પેસ બેકગ્રાઉન્ડ</label>
+          <input type="file" id="s_background" accept="image/*">
+          <img id="s_backgroundPrev" class="logo-prev" alt="" style="display:none">
+        </div>
       </div>
       <div class="center no-print" style="margin-top:16px">
         <button class="btn" onclick="saveSettings()">💾 સેટિંગ્સ સેવ કરો</button>
@@ -394,6 +554,12 @@
       <div class="counts" id="counts"><div class="count-box"><div class="n">…</div><div class="t">લોડ થાય છે...</div></div></div>
       <div class="top-actions">
         <input type="text" id="adminSearch" placeholder="નામ / નંબરથી શોધો..." style="width:auto;display:inline-block;min-width:180px">
+        <select id="adminStatusFilter" style="width:auto;min-width:150px;padding:9px 12px;border-radius:8px;border:1px solid #cdc3b2">
+          <option value="">બધું</option>
+          <option value="pending">પેન્ડિંગ</option>
+          <option value="approved">અપ્રુવ કર્યું</option>
+          <option value="rejected">રિજેક્ટ</option>
+        </select>
         <button class="btn ghost small" onclick="exportCSV()">⬇️ CSV</button>
         <button class="btn ghost small" onclick="exportXLSX()">⬇️ Excel</button>
         <button class="btn ghost small" onclick="backupData()">💾 બેકઅપ</button>
@@ -490,23 +656,27 @@ function feeFor(gender) { return gender === "bahin" ? 50 : 100; }
 /* settings */
 let SET = {
   title: "ગરબા પાસ – નવરાત્રી મહોત્સવ ૨૦૨૬",
-  subtitle: "શ્રી ખેલૈયા મંડળ, વાસદ",
+  subtitle: "શ્રી खेलૈયા મંડળ, વાસદ",
   address: "",
   date_from: "11-10-2026",
   date_to: "20-11-2026",
-  logo: ""
+  logo: "",
+  background: ""
 };
 function applySettings() {
-  if (SET.title) document.getElementById("topTitle").textContent = (SET.logo ? "" : "🪔 ") + SET.title;
-  if (SET.subtitle) {
-    document.getElementById("topSub").textContent =
-      SET.subtitle + " • તા. " + SET.date_from + " થી તા. " + SET.date_to + " સુધી";
+  if (SET.title) {
+    const mainTitle = document.getElementById("topTitle");
+    if (mainTitle) mainTitle.textContent = (SET.logo ? "" : "🪔 ") + SET.title;
+  }
+  const sub = document.getElementById("topSub");
+  if (SET.subtitle && sub) {
+    sub.textContent = SET.subtitle + " • તા. " + (SET.date_from || "") + " થી તા. " + (SET.date_to || "") + " સુધી";
   }
   const logo = document.getElementById("topLogo");
   if (SET.logo) { logo.src = SET.logo; logo.style.display = ""; } else { logo.style.display = "none"; }
   const yr = String(SET.date_to).split("-").pop() || "૨૦૨૬";
-  document.getElementById("footText").textContent =
-    SET.subtitle + (SET.address ? " • " + SET.address : "") + " • નવરાત્રી મહોત્સવ " + yr;
+  const foot = document.getElementById("footText");
+  if (foot) foot.textContent = SET.subtitle + (SET.address ? " • " + SET.address : "") + " • નવરાત્રી મહોત્સવ " + yr;
 }
 
 /* image resize for uploads */
@@ -557,13 +727,248 @@ function serverDown(e) {
 }
 
 /* ============ views ============ */
+const USER_KEY = "nav_user";
+
+function getCurrentUser() {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function canAccessTab(tab) {
+  const user = getCurrentUser();
+  if (!user) return false;
+  const role = user.role || "operator";
+  if (tab === "form") return ["operator", "authority", "admin"].includes(role);
+  if (tab === "pass") return ["operator", "authority", "admin"].includes(role);
+  if (tab === "admin") return role === "admin";
+  return false;
+}
+
+function setCurrentUser(user) {
+  if (user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_KEY);
+  }
+  applyAuthState();
+}
+
+function applyAuthState() {
+  const user = getCurrentUser();
+  const userStatus = document.getElementById("userStatus");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const formEl = document.getElementById("passForm");
+  const loggedIn = !!user;
+
+  if (userStatus) {
+    userStatus.style.display = loggedIn ? "block" : "none";
+    if (loggedIn) {
+      userStatus.textContent = "✅ લોગઇન: " + user.username + " (" + user.role + ")";
+    }
+  }
+  if (logoutBtn) logoutBtn.style.display = loggedIn ? "inline-block" : "none";
+
+  if (formEl) {
+    const allowForm = loggedIn && ["operator", "authority", "admin"].includes((user && user.role) || "operator");
+    formEl.querySelectorAll("input, select, button, textarea").forEach(el => {
+      const id = el.id || "";
+      if (id === "loginUser" || id === "loginPass" || id === "newUserName" || id === "newUserRole" || id === "newUserPass") return;
+      if (el.type === "submit" || el.tagName === "BUTTON") {
+        el.disabled = !allowForm;
+      } else if (el.type !== "hidden") {
+        el.disabled = !allowForm;
+      }
+    });
+  }
+
+  if (!loggedIn) {
+    showView("form");
+    return;
+  }
+  if (user.role === "admin") {
+    showView("admin");
+  } else if (user.role === "authority") {
+    showView("pass");
+  } else {
+    showView("form");
+  }
+}
+
+function renderRoleDashboardInfo() {
+  const user = getCurrentUser();
+  const panel = document.getElementById("roleDashboardInfo");
+  const authorityTitle = document.getElementById("authorityDashboardTitle");
+  const adminTitle = document.getElementById("adminDashboardTitle");
+  if (!user) {
+    if (panel) { panel.style.display = "none"; panel.textContent = ""; }
+    if (authorityTitle) { authorityTitle.style.display = "none"; authorityTitle.textContent = ""; }
+    if (adminTitle) { adminTitle.style.display = "none"; adminTitle.textContent = ""; }
+    return;
+  }
+  const textByRole = {
+    operator: "🧑‍💼 ઓપરેટર ડેશબોર્ડ: નવી અરજીઓ ભરશો, QR અને ફ્રીનું રેકોર્ડ ચેક કરો, અને સબમિટ કરેલ ફોર્મનું સંચાલન કરો.",
+    authority: "🛡️ ಅಥોરિટી ડેશબોર્ડ: પાસ રિવ્યૂ કરો, પ્રૂફ ફોટો ચેક કરો અને ઉપયોગી રેકોર્ડ રીપોર્ટ જુઓ.",
+    admin: "⚙️ એડમિન ડેશબોર્ડ: બધા રેકોર્ડ્સ, approvals, settings અને branding મેનેજ કરો."
+  };
+  const text = textByRole[user.role] || textByRole.operator;
+  if (panel) {
+    panel.textContent = text;
+    panel.style.display = "block";
+  }
+  if (authorityTitle) {
+    authorityTitle.textContent = user.role === "authority" ? text : "";
+    authorityTitle.style.display = user.role === "authority" ? "block" : "none";
+  }
+  if (adminTitle) {
+    adminTitle.textContent = user.role === "admin" ? text : "";
+    adminTitle.style.display = user.role === "admin" ? "block" : "none";
+  }
+}
+
 function showView(v) {
+  const user = getCurrentUser();
+  if (!user) {
+    ["form", "pass", "admin"].forEach(x => {
+      document.getElementById("view-" + x).style.display = x === "form" ? "block" : "none";
+      document.getElementById("nav-" + x).classList.toggle("active", x === "form");
+    });
+    showMsg("authMsg", "🔒 ફોર્મ ભરવા માટે લોગિન જરૂરી છે.", "err");
+    renderRoleDashboardInfo();
+    return;
+  }
+  if (!canAccessTab(v)) {
+    v = user.role === "admin" ? "admin" : (user.role === "authority" ? "pass" : "form");
+  }
   ["form", "pass", "admin"].forEach(x => {
     document.getElementById("view-" + x).style.display = (x === v) ? "block" : "none";
     document.getElementById("nav-" + x).classList.toggle("active", x === v);
   });
+  renderRoleDashboardInfo();
   if (v === "admin") renderAdmin();
   if (v === "pass") document.getElementById("passResult").innerHTML = "";
+}
+
+function logoutUser() {
+  localStorage.removeItem(USER_KEY);
+  document.getElementById("loginUser").value = "";
+  document.getElementById("loginPass").value = "";
+  showMsg("authMsg", "✅ લોગ આઉટ થઈ ગયું. ફરીથી લોગિન કરો.", "ok");
+  document.getElementById("logoutBtn").style.display = "none";
+  document.getElementById("userStatus").style.display = "none";
+  showView("form");
+}
+
+async function loginUser() {
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value.trim();
+  if (!username || !password) {
+    showMsg("authMsg", "યુઝનેમ અને પાસવર્ડ નાખો.", "err");
+    return;
+  }
+  try {
+    const res = await api("/api/login", "POST", { username, password });
+    setCurrentUser(res.user);
+    showMsg("authMsg", "✅ લોગિન સફળ. રોલ: " + res.user.role, "ok");
+    if (res.user.role === "admin") showView("admin");
+    else if (res.user.role === "authority") showView("pass");
+    else showView("form");
+  } catch (err) {
+    showMsg("authMsg", err.message || "લોગિન ન થયું.", "err");
+  }
+}
+
+async function createUserAccount() {
+  const username = document.getElementById("newUserName").value.trim();
+  const password = document.getElementById("newUserPass").value.trim();
+  const role = document.getElementById("newUserRole").value;
+  if (!username || !password) {
+    showMsg("authMsg", "નવા યુઝરનેમ અને પાસવર્ડ નાખો.", "err");
+    return;
+  }
+  try {
+    const res = await api("/api/users", "POST", { username, password, role });
+    showMsg("authMsg", "✅ યુઝર બનાવાયો: " + res.user.username + " (" + res.user.role + ")", "ok");
+    document.getElementById("newUserName").value = "";
+    document.getElementById("newUserPass").value = "";
+  } catch (err) {
+    showMsg("authMsg", err.message || "યુઝર બનાવતા ભૂલ.", "err");
+  }
+}
+
+async function decodeQrFromImage(file) {
+  if (!window.jsQR) throw new Error("QR રીડર લોડ ન થયું છે.");
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("QR ઇમેજ રીડ ન થઇ."));
+    reader.readAsDataURL(file);
+  });
+
+  const img = new Image();
+  img.src = dataUrl;
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error("QR ઇમેજ Berry તૈયાર નથી."));
+  });
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
+  if (!code) throw new Error("QR કોડ શોધી ન શકાયો. સ્પષ્ટ ઇમેજ પસંદ કરો.");
+
+  const raw = String(code.data || "").trim();
+  const match = raw.match(/NP-\d{4}-\d{4}/i) || raw.match(/[A-Z]-\d{4}-\d{4}/i);
+  return (match ? match[0] : raw).trim();
+}
+
+let latestQrNo = null;
+
+async function handleQrPhotoScan() {
+  const file = document.getElementById("scanQrFile").files && document.getElementById("scanQrFile").files[0];
+  if (!file) return;
+  showMsg("scanQrStatus", "QR સ્કેન થાય છે...", "ok");
+  try {
+    const qrNo = await decodeQrFromImage(file);
+    const rec = await api("/api/registrations/" + encodeURIComponent(qrNo));
+    latestQrNo = rec.no;
+    document.getElementById("qrPhotoUploadBox").style.display = "block";
+    document.getElementById("qrPersonInfo").innerHTML =
+      "<strong>પાસ नं:</strong> " + escapeHtml(rec.no) + " &nbsp; • &nbsp; <strong>નામ:</strong> " + escapeHtml(rec.name);
+    document.getElementById("scanQrStatus").innerHTML = "<div class=\"msg ok\">✅ QR ઓળખાયું. હવે નવી ફটো અપલોડ કરો.</div>";
+  } catch (err) {
+    latestQrNo = null;
+    document.getElementById("qrPhotoUploadBox").style.display = "none";
+    showMsg("scanQrStatus", err.message || "QR વાંચી ન શકાયો.", "err");
+  }
+}
+
+async function saveLatestPhoto() {
+  if (!latestQrNo) {
+    showMsg("scanQrStatus", "માટે QR પસંદ કરો અને રેકોર્ડ ઓળખાવો.", "err");
+    return;
+  }
+  const file = document.getElementById("latestPhotoInput").files && document.getElementById("latestPhotoInput").files[0];
+  if (!file) {
+    showMsg("scanQrStatus", "સૌથી પહેલાં નવો ફોટો પસંદ કરો.", "err");
+    return;
+  }
+  try {
+    const photo = await readResized(file, 400);
+    await api("/api/registrations/" + encodeURIComponent(latestQrNo), "PATCH", { photo }, adminPin());
+    showMsg("scanQrStatus", "✅ લેટેસ્ટ ફોટો અપલોડ થઈ ગયો.", "ok");
+    document.getElementById("latestPhotoInput").value = "";
+  } catch (err) {
+    showMsg("scanQrStatus", err.message || "ફોટો અપલોડ ન થઈ શકે.", "err");
+  }
 }
 
 /* ============ form logic ============ */
@@ -631,8 +1036,11 @@ document.getElementById("passForm").addEventListener("submit", async function (e
     if (photoInp.files && photoInp.files[0]) photo = await readResized(photoInp.files[0], 400);
     if (aadharInp.files && aadharInp.files[0]) aadhar = await readResized(aadharInp.files[0], 1000);
 
+    const role = document.getElementById("f_role").value;
     const payload = {
       name, gender, dob, mobile,
+      role,
+      status: "pending",
       photo, aadhar, aadhar_no: aadharNo,
       k: ["k_sar", "k_gam", "k_tal", "k_pin"].map(id => document.getElementById(id).value.trim()),
       h: ["h_sar", "h_gam", "h_tal", "h_pin"].map(id => document.getElementById(id).value.trim())
@@ -687,10 +1095,16 @@ function showPassRec(rec) {
   const photoHtml = rec.photo
     ? '<img class="pass-photo" src="' + rec.photo + '" alt="ફોટો">'
     : '<div class="pass-photo-none">ફોટો નથી</div>';
+  const statusText = (rec.status || "pending") === "approved" ? "અપ્રુવ કરાયું" : ((rec.status || "pending") === "rejected" ? "રિજેક્ટેડ" : "પેન્ડિંગ");
+  const qrHtml = rec.qr_code
+    ? '<div style="margin-top:12px;text-align:center"><img src="' + rec.qr_code + '" alt="QR Code" style="width:110px;height:110px;border:1px solid #ddd;border-radius:8px;background:#fff;padding:6px"><div style="font-size:.72rem;color:var(--muted);margin-top:6px">QR કોડ</div></div>'
+    : '';
 
+  const passBg = SET.background ? `background-image: url('${SET.background}');` : '';
   document.getElementById("passResult").innerHTML = `
-    <div class="pass-sheet" id="printArea">
+    <div class="pass-sheet" id="printArea" style="${passBg}">
       <div class="pass-head">
+        ${SET.logo ? `<img class="pass-logo" src="${SET.logo}" alt="logo">` : ""}
         <h2>🪔 ${escapeHtml(SET.title)}</h2>
         <div class="dates">${escapeHtml(SET.subtitle)}</div>
         <div class="dates">તા. ${escapeHtml(SET.date_from)} થી તા. ${escapeHtml(SET.date_to)} સુધી</div>
@@ -699,33 +1113,27 @@ function showPassRec(rec) {
         <div class="pass-top">
           ${photoHtml}
           <div style="flex:1">
-            <div class="pass-no">🎟️ પાસ નં: ${escapeHtml(rec.no)}</div>
-            <div class="pass-row"><span class="k">નામ</span><span class="v">${escapeHtml(rec.name)} ${kid ? "(બાળક)" : ""}</span></div>
-            <div class="pass-row"><span class="k">લિંગ</span><span class="v">${genderLabel}</span></div>
+            <div class="pass-no">🎟️ પાસ नं: ${escapeHtml(rec.no)}</div>
+            <div class="pass-row"><span class="k">નામ</span><span class="v">${escapeHtml(rec.name)}</span></div>
             <div class="pass-row"><span class="k">જન્મ તારીખ</span><span class="v">${fmtDate(rec.dob)}</span></div>
+            <div class="pass-row"><span class="k">મોબાઈલ</span><span class="v">${toGuj(rec.mobile)}</span></div>
           </div>
         </div>
-        <div class="pass-row"><span class="k">ઉમર</span><span class="v">${toGuj(rec.age)} વર્ષ</span></div>
-        <div class="pass-row"><span class="k">મોબાઈલ</span><span class="v">${toGuj(rec.mobile)}</span></div>
         <div class="pass-row"><span class="k">ગામ</span><span class="v">${escapeHtml(gam)}</span></div>
-        ${rec.aadhar_no ? `<div class="pass-row"><span class="k">આધાર નં</span><span class="v">${toGuj(rec.aadhar_no)}</span></div>` : ""}
-        <div class="pass-row"><span class="k">ફી ભરેલ</span><span class="v">₹ ${toGuj(rec.fee)}/-</span></div>
-        <div class="pass-row"><span class="k">તારીખ</span><span class="v">${fmtDate(rec.date)}</span></div>
-        <div class="timing">⏰ <b>ગરબા સમય:</b> ${tm.label}</div>
-        <div class="note" style="font-size:.8rem">⛔ આ પાસ ફરજિયાત પહેરવાનો છે. અન્ય કોઈને આપવાનો નથી.</div>
-        <div class="pass-sign">
-          <div>
-            <div class="line">અરજદારની સહી</div>
-          </div>
-          <div>
-            <div class="line">પાસ આપનાર – સંચાલન મંડળ</div>
-          </div>
-        </div>
-        <div class="stamp">---- સંચાલન મંડળ, વાસદ ----</div>
+        <div class="pass-row"><span class="k">સરનામું</span><span class="v">${escapeHtml((rec.k && rec.k[0]) || "-")}</span></div>
+        <div class="pass-row"><span class="k">પિન</span><span class="v">${toGuj((rec.k && rec.k[3]) || "-")}</span></div>
+        <div class="pass-row"><span class="k">સ્ટેટસ</span><span class="v">${statusText}</span></div>
+        <div class="pass-row"><span class="k">અધિકાર</span><span class="v">${escapeHtml(rec.role || "operator")}</span></div>
+        <div class="pass-row"><span class="k">ફી</span><span class="v">₹ ${toGuj(rec.fee)}/-</span></div>
+        ${qrHtml}
+      </div>
+      <div class="pass-footer">
+        <div>અમારા ગામની રિવાજ, દૈનિક વગમ અને માનવતાની પસંદગીઓ</div>
+        <div style="margin-top:8px">સહીઓ: _________ &nbsp;&nbsp; ${escapeHtml(SET.subtitle)}</div>
       </div>
     </div>
     <div class="center no-print" style="margin-top:14px">
-      <button class="btn" onclick="printPass()">🖨️ પાસ પ્રિન્ટ કરો</button>
+      <button class="btn" onclick="printPass()">🖨️ પાસ પ્રિન्ट કરો</button>
       <button class="btn ghost" onclick="showView('form')">➕ નવું ફોર્મ</button>
     </div>`;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -744,12 +1152,14 @@ function printPass() {
 let adminTimer = null;
 function renderAdmin() {
   const q = (document.getElementById("adminSearch").value || "").trim().toLowerCase();
+  const status = (document.getElementById("adminStatusFilter") || {}).value || "";
   document.getElementById("counts").innerHTML = '<div class="count-box"><div class="n">…</div><div class="t">લોડ થાય છે...</div></div>';
   document.getElementById("adminTable").innerHTML = "";
   clearTimeout(adminTimer);
   adminTimer = setTimeout(async () => {
     try {
-      const list = await api("/api/registrations" + (q ? "?q=" + encodeURIComponent(q) : ""));
+      const url = "/api/registrations" + (q || status ? "?" + new URLSearchParams({ q, status }).toString() : "");
+      const list = await api(url);
       drawAdmin(list);
     } catch (err) {
       document.getElementById("adminTable").innerHTML =
@@ -762,18 +1172,22 @@ function renderAdmin() {
 function drawAdmin(list) {
   const countB = list.filter(r => r.gender === "bahin").length;
   const countO = list.filter(r => r.gender === "bhai").length;
+  const pending = list.filter(r => (r.status || "pending") === "pending").length;
+  const approved = list.filter(r => (r.status || "pending") === "approved").length;
   const totalFee = list.reduce((s, r) => s + r.fee, 0);
 
   document.getElementById("counts").innerHTML = `
     <div class="count-box"><div class="n">${toGuj(list.length)}</div><div class="t">કુલ</div></div>
     <div class="count-box"><div class="n">${toGuj(countB)}</div><div class="t">બહેનો</div></div>
     <div class="count-box"><div class="n">${toGuj(countO)}</div><div class="t">ભાઈઓ</div></div>
+    <div class="count-box"><div class="n">${toGuj(pending)}</div><div class="t">પેન્ડિંગ</div></div>
+    <div class="count-box"><div class="n">${toGuj(approved)}</div><div class="t">અપ્રુવ</div></div>
     <div class="count-box"><div class="n">₹ ${toGuj(totalFee)}</div><div class="t">કુલ ફી</div></div>`;
 
   document.getElementById("adminTable").innerHTML = `
     <table>
       <thead><tr>
-        <th>#</th><th>પાસ નં</th><th>ફોટો</th><th>નામ</th><th>લિંગ</th><th>ઉમર</th><th>મોબાઈલ</th><th>ગામ</th><th>આધાર</th><th>ફી</th><th>તારીખ</th><th></th>
+        <th>#</th><th>પાસ નં</th><th>ફોટો</th><th>નામ</th><th>રોલ</th><th>સ્ટેટસ</th><th>લિંગ</th><th>ઉમર</th><th>મોબાઈલ</th><th>ગામ</th><th>આધાર</th><th>ફી</th><th>તારીખ</th><th></th>
       </tr></thead>
       <tbody>
         ${list.map((r, i) => `
@@ -782,6 +1196,8 @@ function drawAdmin(list) {
             <td><a href="javascript:void(0)" onclick="showPass('${escapeHtml(r.no)}')">${escapeHtml(r.no)}</a></td>
             <td>${r.photo ? '<img class="thumb" src="' + r.photo + '" alt="">' : '<span class="thumb-none">–</span>'}</td>
             <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.role || "operator")}</td>
+            <td>${((r.status || "pending") === "approved") ? "અપ્રુવ" : ((r.status || "pending") === "rejected" ? "રિજેક્ટ" : "પેન્ડિંગ")}</td>
             <td>${r.gender === "bahin" ? "બહેન" : "ભાઈ"}</td>
             <td>${toGuj(r.age)}</td>
             <td>${toGuj(r.mobile)}</td>
@@ -791,11 +1207,31 @@ function drawAdmin(list) {
             <td>${fmtDate(r.date)}</td>
             <td>
               <button class="btn small ghost" onclick="openEdit('${escapeHtml(r.no)}')">એડિટ</button>
+              <button class="btn small" style="background:#1e7d46" onclick="approveRec('${escapeHtml(r.no)}')">અપ્રુવ</button>
+              <button class="btn small" style="background:#a12626" onclick="rejectRec('${escapeHtml(r.no)}')">રિજેક્ટ</button>
               <button class="btn small" style="background:#a12626" onclick="delRec('${escapeHtml(r.no)}')">દૂર કરો</button>
             </td>
-          </tr>`).join("") || '<tr><td colspan="12" style="text-align:center;color:var(--muted)">કોઈ રજીસ્ટ્રેશન નથી.</td></tr>'}
+          </tr>`).join("") || '<tr><td colspan="14" style="text-align:center;color:var(--muted)">કોઈ રજીસ્ટ્રેશન નથી.</td></tr>'}
       </tbody>
     </table>`;
+}
+
+async function approveRec(no) {
+  try {
+    await api("/api/registrations/" + encodeURIComponent(no), "PATCH", { status: "approved", approved_by: "authority" }, adminPin());
+    renderAdmin();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function rejectRec(no) {
+  try {
+    await api("/api/registrations/" + encodeURIComponent(no), "PATCH", { status: "rejected", approved_by: "authority" }, adminPin());
+    renderAdmin();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function delRec(no) {
@@ -858,6 +1294,9 @@ function fillSettingsForm() {
   const logoPrev = document.getElementById("s_logoPrev");
   if (SET.logo) { logoPrev.src = SET.logo; logoPrev.style.display = ""; }
   else { logoPrev.style.display = "none"; }
+  const bgPrev = document.getElementById("s_backgroundPrev");
+  if (SET.background) { bgPrev.src = SET.background; bgPrev.style.display = ""; }
+  else { bgPrev.style.display = "none"; }
 }
 async function saveSettings() {
   document.getElementById("settingsMsg").innerHTML = "";
@@ -866,7 +1305,8 @@ async function saveSettings() {
     subtitle: document.getElementById("s_subtitle").value.trim(),
     address: document.getElementById("s_address").value.trim(),
     date_from: document.getElementById("s_date_from").value.trim(),
-    date_to: document.getElementById("s_date_to").value.trim()
+    date_to: document.getElementById("s_date_to").value.trim(),
+    background: document.getElementById("s_background").files && document.getElementById("s_background").files[0] ? "/background.png" : (SET.background || "")
   };
   try {
     const pin = adminPin();
@@ -878,6 +1318,14 @@ async function saveSettings() {
       const res = await fetch("/api/logo", { method: "POST", headers: { "X-Admin-Pin": pin }, body: fd });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || "લોગો સેવ ન થયો."); }
       document.getElementById("s_logo").value = "";
+    }
+    const bgFile = document.getElementById("s_background").files && document.getElementById("s_background").files[0];
+    if (bgFile) {
+      const fd = new FormData();
+      fd.append("background", bgFile);
+      const res = await fetch("/api/background", { method: "POST", headers: { "X-Admin-Pin": pin }, body: fd });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || "બેકગ્રાઉન્ડ સેવ ન થયો."); }
+      document.getElementById("s_background").value = "";
     }
     await loadSettings();
     showMsg("settingsMsg", "✅ સેટિંગ્સ સેવ થઈ ગયા.", "ok");
@@ -993,11 +1441,33 @@ function bindPreview(fileId, prevId, maxW) {
   document.getElementById("f_dob").addEventListener("change", updateAge);
   document.getElementById("sameAddr").addEventListener("change", copyAddr);
   document.getElementById("adminSearch").addEventListener("input", renderAdmin);
+  document.getElementById("adminStatusFilter").addEventListener("change", renderAdmin);
   document.getElementById("adminPin").value = localStorage.getItem(PIN_KEY) || "";
+  const user = JSON.parse(localStorage.getItem(USER_KEY) || "null");
+  if (user) {
+    document.getElementById("logoutBtn").style.display = "inline-block";
+    document.getElementById("userStatus").textContent = "✅ લોગઇન: " + user.username + " (" + user.role + ")";
+    document.getElementById("userStatus").style.display = "block";
+    if (user.role === "admin") showView("admin");
+    else if (user.role === "authority") showView("pass");
+    else showView("form");
+  } else {
+    showView("form");
+  }
+  applyAuthState();
+  document.getElementById("scanQrFile").addEventListener("change", handleQrPhotoScan);
   bindPreview("f_photo", "photoPrev", 400);
   bindPreview("f_aadharFile", "aadharPrev", 1000);
   document.getElementById("s_logo").addEventListener("change", function () {
     const prev = document.getElementById("s_logoPrev");
+    const f = this.files && this.files[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    prev.src = url;
+    prev.style.display = "";
+  });
+  document.getElementById("s_background").addEventListener("change", function () {
+    const prev = document.getElementById("s_backgroundPrev");
     const f = this.files && this.files[0];
     if (!f) return;
     const url = URL.createObjectURL(f);

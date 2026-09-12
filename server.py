@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import json
 import os
@@ -9,6 +10,7 @@ from datetime import date
 from pathlib import Path
 from io import BytesIO
 
+import requests
 from flask import Flask, jsonify, request, send_from_directory, Response
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -31,7 +33,146 @@ DEFAULT_SETTINGS = {
     "address": "",
     "date_from": "11-10-2026",
     "date_to": "20-11-2026",
+    "background": "",
 }
+
+VALID_ROLES = {"operator", "authority", "admin"}
+VALID_STATUSES = {"pending", "approved", "rejected"}
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip()
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "").strip()
+SUPABASE_TABLE = os.environ.get("SUPABASE_TABLE", "registrations").strip()
+
+
+def supabase_enabled():
+    return bool(SUPABASE_URL and SUPABASE_KEY)
+
+
+def supabase_available():
+    if not supabase_enabled():
+        return False
+    try:
+        resp = supabase_request("GET", f"{SUPABASE_TABLE}?select=no&limit=1")
+    except Exception:
+        return False
+    return bool(resp is not None and getattr(resp, "status_code", 500) < 400)
+
+
+def supabase_request(method, path, payload=None):
+    if not supabase_enabled():
+        return None
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/{path}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+    }
+    try:
+        resp = requests.request(method, url, headers=headers, json=payload, timeout=15)
+        if resp.status_code >= 400:
+            return None
+        return resp
+    except requests.RequestException:
+        return None
+
+
+def sync_supabase_record(record):
+    if not supabase_enabled() or not record:
+        return None
+    if "no" not in record:
+        return None
+    payload = {
+        "no": str(record.get("no") or ""),
+        "date": str(record.get("date") or ""),
+        "name": str(record.get("name") or ""),
+        "gender": str(record.get("gender") or ""),
+        "dob": str(record.get("dob") or ""),
+        "age": int(record.get("age") or 0),
+        "mobile": str(record.get("mobile") or ""),
+        "k_sar": str((record.get("k") or ["", "", "", ""])[0] or ""),
+        "k_gam": str((record.get("k") or ["", "", "", ""])[1] or ""),
+        "k_tal": str((record.get("k") or ["", "", "", ""])[2] or ""),
+        "k_pin": str((record.get("k") or ["", "", "", ""])[3] or ""),
+        "h_sar": str((record.get("h") or ["", "", "", ""])[0] or ""),
+        "h_gam": str((record.get("h") or ["", "", "", ""])[1] or ""),
+        "h_tal": str((record.get("h") or ["", "", "", ""])[2] or ""),
+        "h_pin": str((record.get("h") or ["", "", "", ""])[3] or ""),
+        "fee": int(record.get("fee") or 0),
+        "ts": int(record.get("ts") or 0),
+        "photo": str(record.get("photo") or ""),
+        "aadhar": str(record.get("aadhar") or ""),
+        "aadhar_no": str(record.get("aadhar_no") or ""),
+        "role": str(record.get("role") or "operator"),
+        "status": str(record.get("status") or "pending"),
+        "approved_by": str(record.get("approved_by") or ""),
+        "qr_code": str(record.get("qr_code") or ""),
+    }
+    try:
+        supabase_request("POST", SUPABASE_TABLE, payload)
+    except Exception:
+        return None
+    return payload
+
+
+def supabase_row_to_record(row):
+    if not isinstance(row, dict):
+        return {}
+    return {
+        "no": row.get("no") or "",
+        "date": row.get("date") or "",
+        "name": row.get("name") or "",
+        "gender": row.get("gender") or "bhai",
+        "dob": row.get("dob") or "",
+        "age": int(row.get("age") or 0),
+        "mobile": row.get("mobile") or "",
+        "k": [row.get("k_sar") or "", row.get("k_gam") or "", row.get("k_tal") or "", row.get("k_pin") or ""],
+        "h": [row.get("h_sar") or "", row.get("h_gam") or "", row.get("h_tal") or "", row.get("h_pin") or ""],
+        "fee": int(row.get("fee") or 0),
+        "ts": int(row.get("ts") or 0),
+        "photo": row.get("photo") or "",
+        "aadhar": row.get("aadhar") or "",
+        "aadhar_no": row.get("aadhar_no") or "",
+        "role": row.get("role") or "operator",
+        "status": row.get("status") or "pending",
+        "approved_by": row.get("approved_by") or "",
+        "qr_code": row.get("qr_code") or "",
+    }
+
+
+def list_supabase_records(q="", status=""):
+    if not supabase_enabled() or not supabase_available():
+        return []
+    url = f"{SUPABASE_TABLE}?select=*"
+    resp = supabase_request("GET", url)
+    if resp is None:
+        return []
+    items = resp.json() if hasattr(resp, "json") else []
+    qn = (q or "").lower().strip()
+    statusn = (status or "").lower().strip()
+    filtered = []
+    for row in items:
+        name = str((row.get("name") or "")).lower()
+        no = str((row.get("no") or "")).lower()
+        mobile = str((row.get("mobile") or "")).lower()
+        item_status = str((row.get("status") or "pending")).lower()
+        if qn and qn not in name and qn not in no and qn not in mobile:
+            continue
+        if statusn and item_status != statusn:
+            continue
+        filtered.append(supabase_row_to_record(row))
+    return filtered
+
+
+def get_supabase_record(no):
+    if not supabase_enabled() or not supabase_available():
+        return {}
+    resp = supabase_request("GET", f"{SUPABASE_TABLE}?no=eq.{no}&select=*")
+    if resp is None:
+        return {}
+    rows = resp.json() if hasattr(resp, "json") else []
+    if not rows:
+        return {}
+    return supabase_row_to_record(rows[0])
 
 
 # ------------------------- database -------------------------
@@ -56,15 +197,77 @@ def init_db():
                 h_sar     TEXT, h_gam TEXT, h_tal TEXT, h_pin TEXT,
                 fee       INTEGER NOT NULL,
                 ts        INTEGER NOT NULL,
-                photo     TEXT, aadhar TEXT, aadhar_no TEXT
+                photo     TEXT, aadhar TEXT, aadhar_no TEXT,
+                role      TEXT NOT NULL DEFAULT 'operator',
+                status    TEXT NOT NULL DEFAULT 'pending',
+                approved_by TEXT,
+                qr_code   TEXT
             )"""
         )
         cols = {r["name"] for r in c.execute("PRAGMA table_info(registrations)").fetchall()}
-        for col, ddl in (("photo", "TEXT"), ("aadhar", "TEXT"), ("aadhar_no", "TEXT")):
+        for col, ddl in (
+            ("photo", "TEXT"),
+            ("aadhar", "TEXT"),
+            ("aadhar_no", "TEXT"),
+            ("role", "TEXT NOT NULL DEFAULT 'operator'"),
+            ("status", "TEXT NOT NULL DEFAULT 'pending'"),
+            ("approved_by", "TEXT"),
+            ("qr_code", "TEXT"),
+        ):
             if col not in cols:
                 c.execute(f"ALTER TABLE registrations ADD COLUMN {col} {ddl}")
         c.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
         c.execute("INSERT OR IGNORE INTO meta (key, value) VALUES ('counter', '0')")
+        c.execute(
+            """CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'operator',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )"""
+        )
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.strip().encode("utf-8")).hexdigest()
+
+
+def create_user_record(username: str, password: str, role: str = "operator"):
+    username = (username or "").strip()
+    password = (password or "").strip()
+    role = (role or "operator").strip().lower()
+    if not username or len(username) < 3:
+        raise ValueError("યુઝરનેમ ઓછામાં ઓછી 3 અક્ષરનો હોવો જોઈએ.")
+    if len(password) < 6:
+        raise ValueError("પાસવર્ડ ઓછામાં ઓછી 6 અક્ષરનો હોવો જોઈએ.")
+    if role not in VALID_ROLES:
+        role = "operator"
+    with db() as c:
+        existing = c.execute("SELECT id, username, role FROM users WHERE username=?", (username,)).fetchone()
+        if existing:
+            return {"id": existing["id"], "username": existing["username"], "role": existing["role"]}
+        c.execute(
+            "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+            (username, hash_password(password), role),
+        )
+        row = c.execute("SELECT id, username, role FROM users WHERE username=?", (username,)).fetchone()
+    return {"id": row["id"], "username": row["username"], "role": row["role"]}
+
+
+def verify_user(username: str, password: str):
+    username = (username or "").strip()
+    password = (password or "").strip()
+    if not username or not password:
+        return None
+    with db() as c:
+        row = c.execute(
+            "SELECT id, username, role FROM users WHERE username=? AND password=?",
+            (username, hash_password(password)),
+        ).fetchone()
+    if not row:
+        return None
+    return {"id": row["id"], "username": row["username"], "role": row["role"]}
 
 
 def get_counter():
@@ -109,6 +312,10 @@ def row_to_dict(r, with_blobs=False):
         "fee": r["fee"],
         "ts": r["ts"],
         "aadhar_no": r["aadhar_no"] or "",
+        "role": (r["role"] or "operator"),
+        "status": (r["status"] or "pending"),
+        "approved_by": r["approved_by"] or "",
+        "qr_code": r["qr_code"] or "",
         "has_photo": bool(r["photo"]),
         "has_aadhar": bool(r["aadhar"]),
     }
@@ -143,6 +350,15 @@ def logo_url():
     return "/logo.png" if (BASE_DIR / "navratri" / "logo.png").exists() else ""
 
 
+def background_url():
+    return "/background.png" if (BASE_DIR / "navratri" / "background.png").exists() else ""
+
+
+def qr_url(value: str) -> str:
+    payload = value.strip() or "navratri-pass"
+    return f"https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={__import__('urllib.parse').parse.quote(payload)}"
+
+
 # ------------------------- admin pin -------------------------
 def check_pin():
     if ADMIN_PIN is None or ADMIN_PIN == "":
@@ -175,6 +391,30 @@ def api_next():
     return jsonify({"no": f"NP-{date.today().year}-{get_counter() + 1:04d}"})
 
 
+@app.post("/api/users")
+def api_create_user():
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", "")).strip()
+    role = str(data.get("role", "operator")).strip().lower()
+    try:
+        user = create_user_record(username, password, role)
+        return jsonify({"ok": True, "user": user})
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@app.post("/api/login")
+def api_login():
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", "")).strip()
+    user = verify_user(username, password)
+    if not user:
+        return jsonify({"ok": False, "error": "યુઝરનેમ અથવા પાસવર્ડ ખોટો છે."}), 401
+    return jsonify({"ok": True, "user": user})
+
+
 @app.post("/api/register")
 def api_register():
     data = request.get_json(silent=True) or {}
@@ -182,6 +422,9 @@ def api_register():
     gender = str(data.get("gender", "")).strip()
     dob = str(data.get("dob", "")).strip()
     mobile = str(data.get("mobile", "")).strip()
+    role = str(data.get("role", "operator")).strip().lower()
+    if role not in VALID_ROLES:
+        role = "operator"
 
     if not name:
         return jsonify({"ok": False, "error": "નામ ફરજિયાત છે."}), 400
@@ -206,37 +449,48 @@ def api_register():
 
     rec_no, _ = next_no()
     ts = int(__import__("time").time() * 1000)
+    qr = qr_url(rec_no)
     with db() as c:
         c.execute(
             """INSERT INTO registrations
                (no, date, name, gender, dob, age, mobile,
                 k_sar, k_gam, k_tal, k_pin, h_sar, h_gam, h_tal, h_pin, fee, ts,
-                photo, aadhar, aadhar_no)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                photo, aadhar, aadhar_no, role, status, approved_by, qr_code)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rec_no, date.today().isoformat(), name, gender, dob, age, mobile,
              k[0], k[1], k[2], k[3], h[0], h[1], h[2], h[3], GENDER_FEE[gender], ts,
-             photo, aadhar, aadhar_no),
+             photo, aadhar, aadhar_no, role, "pending", "", qr),
         )
 
     with db() as c:
         row = c.execute("SELECT * FROM registrations WHERE no=?", (rec_no,)).fetchone()
-    return jsonify({"ok": True, "no": rec_no, "record": row_to_dict(row, with_blobs=True)})
+    record = row_to_dict(row, with_blobs=True)
+    sync_supabase_record(record)
+    return jsonify({"ok": True, "no": rec_no, "record": record})
 
 
 @app.get("/api/registrations")
 def api_list():
     q = request.args.get("q", "").strip().lower()
+    status = request.args.get("status", "").strip().lower()
     with db() as c:
         if q:
             like = f"%{q}%"
             rows = c.execute(
                 """SELECT * FROM registrations
-                   WHERE lower(name) LIKE ? OR mobile LIKE ? OR lower(no) LIKE ?
+                   WHERE (lower(name) LIKE ? OR mobile LIKE ? OR lower(no) LIKE ?)
+                   AND (? = '' OR status = ?)
                    ORDER BY ts DESC""",
-                (like, like, like),
+                (like, like, like, status, status),
             ).fetchall()
         else:
-            rows = c.execute("SELECT * FROM registrations ORDER BY ts DESC").fetchall()
+            if status:
+                rows = c.execute(
+                    "SELECT * FROM registrations WHERE status=? ORDER BY ts DESC",
+                    (status,),
+                ).fetchall()
+            else:
+                rows = c.execute("SELECT * FROM registrations ORDER BY ts DESC").fetchall()
     items = []
     for r in rows:
         d = row_to_dict(r)
@@ -247,6 +501,7 @@ def api_list():
 
 @app.get("/api/registrations/<no>")
 def api_get(no):
+
     with db() as c:
         row = c.execute("SELECT * FROM registrations WHERE no=?", (no,)).fetchone()
     if not row:
@@ -265,6 +520,15 @@ def api_patch(no):
         return jsonify({"ok": False, "error": "પાસ મળ્યો નથી."}), 404
 
     data = request.get_json(silent=True) or {}
+
+    status = str(data.get("status", row["status"] or "pending")).strip().lower()
+    if status not in VALID_STATUSES:
+        status = row["status"] or "pending"
+    approved_by = str(data.get("approved_by", row["approved_by"] or "")).strip().lower()
+    if status == "approved" and approved_by not in VALID_ROLES:
+        approved_by = "authority"
+    if status != "approved":
+        approved_by = ""
 
     def field(name):
         return str(data.get(name, row[name] or "")).strip()
@@ -301,19 +565,25 @@ def api_patch(no):
     if aadhar is None:
         aadhar = row["aadhar"]
 
+    role = str(data.get("role", row["role"] or "operator")).strip().lower()
+    if role not in VALID_ROLES:
+        role = row["role"] or "operator"
+
     with db() as c:
         c.execute(
             """UPDATE registrations SET date=?, name=?, dob=?, age=?, mobile=?,
                k_sar=?, k_gam=?, k_tal=?, k_pin=?, h_sar=?, h_gam=?, h_tal=?, h_pin=?,
-               photo=?, aadhar=?, aadhar_no=?
+               photo=?, aadhar=?, aadhar_no=?, role=?, status=?, approved_by=?, qr_code=?
                WHERE no=?""",
             (rdate, name, dob, age, mobile,
              k[0], k[1], k[2], k[3], h[0], h[1], h[2], h[3],
-             photo, aadhar, aadhar_no, no),
+             photo, aadhar, aadhar_no, role, status, approved_by, row["qr_code"] or qr_url(no), no),
         )
     with db() as c:
         row = c.execute("SELECT * FROM registrations WHERE no=?", (no,)).fetchone()
-    return jsonify({"ok": True, "record": row_to_dict(row, with_blobs=True)})
+    record = row_to_dict(row, with_blobs=True)
+    sync_supabase_record(record)
+    return jsonify({"ok": True, "record": record})
 
 
 @app.delete("/api/registrations/<no>")
@@ -341,7 +611,8 @@ def api_clear():
 @app.get("/api/settings")
 def api_get_settings():
     s = get_settings()
-    s["logo"] = logo_url()
+    s["logo"] = s.get("logo") or logo_url()
+    s["background"] = s.get("background") or background_url()
     return jsonify(s)
 
 
@@ -351,11 +622,12 @@ def api_save_settings():
         return pin_error()
     data = request.get_json(silent=True) or {}
     s = get_settings()
-    for key in ("title", "subtitle", "address", "date_from", "date_to"):
+    for key in ("title", "subtitle", "address", "date_from", "date_to", "background"):
         if key in data:
             s[key] = str(data[key]).strip()
     set_settings(s)
-    s["logo"] = logo_url()
+    s["logo"] = s.get("logo") or logo_url()
+    s["background"] = s.get("background") or background_url()
     return jsonify({"ok": True, "settings": s})
 
 
@@ -373,6 +645,22 @@ def api_logo():
         return jsonify({"ok": False, "error": "લોગો ફાઈલ ૫ MB થી નાની રાખો."}), 400
     (STATIC_DIR / "logo.png").write_bytes(data)
     return jsonify({"ok": True, "logo": "/logo.png"})
+
+
+@app.post("/api/background")
+def api_background():
+    if not check_pin():
+        return pin_error()
+    f = request.files.get("background")
+    if f is None:
+        return jsonify({"ok": False, "error": "બેકગ્રાઉન્ડ ફાઈલ પસંદ કરો."}), 400
+    data = f.read()
+    if not data:
+        return jsonify({"ok": False, "error": "ખાલી ફાઈલ છે."}), 400
+    if len(data) > 5 * 1024 * 1024:
+        return jsonify({"ok": False, "error": "બેકગ્રાઉન્ડ ફાઈલ ૫ MB થી નાની રાખો."}), 400
+    (STATIC_DIR / "background.png").write_bytes(data)
+    return jsonify({"ok": True, "background": "/background.png"})
 
 
 @app.get("/api/stats")
