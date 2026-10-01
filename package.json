@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "python -m streamlit run streamlit_app.py",
-    "navratri": "python3 server.py"
+    "navratri": "python3 server.py",
+    "salary": "python3 salary_server.py",
+    "test": "pytest -q"
   }
 }

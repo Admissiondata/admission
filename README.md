@@ -1,5 +1,15 @@
 # admission
 
+## Faculty Salary Desk
+
+The salary application is available separately from the existing Navratri pass app:
+
+```bash
+npm run salary
+```
+
+Open `http://localhost:5001`. It stores salary data in `salary_data.db`, supports department and faculty setup, configurable working weekdays, monthly attendance, live salary calculation, finalization, and an audit log. On the dashboard, select **Import June 2026 sheet** and choose the workbook containing the `June -2026` tab to import its visiting staff, attendance, and payable salary. The dashboard then opens on that imported period. The reusable calculation rules live in `salary_service.py`.
+
 ## નવરાત્રી ગરબા પાસ ૨૦૨૬
 
 Web app — રજીસ્ટ્રેશન ફોર્મ, પાસ જનરેશન/પ્રિન્ટ અને વ્યવસ્થાપન. ડેટા **SQLite** database (server) માં રહે છે, એટલે બધા કમ્પ્યુટર થી એક જ ડેટા સાથે કામ થાય છે.
