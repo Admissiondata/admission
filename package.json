@@ -6,6 +6,7 @@
     "dev": "node matching-server.js",
     "navratri": "node navratri-server.js",
     "salary": "node salary-server.js",
+    "migrate:salary": "node scripts/migrate-salary-to-supabase.js",
     "test": "node --test tests-node/*.test.js"
   },
   "dependencies": {

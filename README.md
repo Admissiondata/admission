@@ -19,6 +19,10 @@ npm run salary
 
 Open the salary app at https://jubilant-invention-4qgg74gqxrvj26pp-5001.app.github.dev/ (or `http://localhost:5001` locally). It stores salary data in `salary_data.db`, supports department and faculty setup, configurable working weekdays, monthly attendance, live salary calculation, finalization, and an audit log. On the dashboard, select **Import June 2026 sheet** and choose the workbook containing the `June -2026` tab to import its visiting staff, attendance, and payable salary. The dashboard then opens on that imported period.
 
+### Vercel deployment
+
+The Vercel deployment serves the salary dashboard at `/` and runs its API with Supabase-backed storage. Apply `supabase_schema.sql` in the Supabase SQL editor, then set `SUPABASE_URL` and the server-only `SUPABASE_KEY` (service-role key) in the Vercel project environment variables. Migrate the existing SQLite records once with `npm run migrate:salary` from a machine where `.env` contains those same Supabase values. Redeploy after setting the Vercel variables. Do not expose `SUPABASE_KEY` in browser code.
+
 ## નવરાત્રી ગરબા પાસ ૨૦૨૬
 
 Web app — રજીસ્ટ્રેશન ફોર્મ, પાસ જનરેશન/પ્રિન્ટ અને વ્યવસ્થાપન. ડેટા **SQLite** database (server) માં રહે છે, એટલે બધા કમ્પ્યુટર થી એક જ ડેટા સાથે કામ થાય છે.

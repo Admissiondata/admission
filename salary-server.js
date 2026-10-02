@@ -448,4 +448,4 @@ if (require.main === module) {
 	app.listen(port, '0.0.0.0', () => console.log(`Faculty Salary Management -> http://0.0.0.0:${port}`));
 }
 
-module.exports = { createSalaryApp, calculateSalary, attendanceTotals, readVisitingWorkbook, openDatabase };
+module.exports = { createSalaryApp, calculateSalary, attendanceTotals, readVisitingWorkbook, openDatabase, periodParts, weekDay, money, summaryWorkbook, visitingAttendanceWorkbook };
