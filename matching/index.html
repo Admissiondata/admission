@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admission Match Tool</title>
+  <style>
+    :root { --ink:#222c2e; --muted:#667477; --line:#d7dfdc; --paper:#fff; --canvas:#edf2ef; --green:#176b58; --green-dark:#104b40; --amber:#bd7b28; --red:#a43d32; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); background:linear-gradient(145deg,#edf2ef 0%,#f6f3eb 100%); font-family:Georgia,'Times New Roman',serif; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px clamp(18px,4vw,52px); background:var(--green-dark); color:#fff; }
+    .wordmark { font:700 12px Arial,sans-serif; letter-spacing:1px; text-transform:uppercase; color:#d3e9df; }
+    header h1 { margin:6px 0 0; font-size:26px; font-weight:500; }
+    .header-note { font:12px Arial,sans-serif; color:#d3e9df; }
+    main { width:min(1280px,100%); margin:0 auto; padding:30px clamp(16px,4vw,48px) 60px; }
+    .upload-band { display:grid; grid-template-columns:1fr 1fr auto; align-items:end; gap:14px; padding:20px; background:rgba(255,255,255,.9); border:1px solid var(--line); }
+    label { display:block; margin:0 0 7px; color:var(--muted); font:700 11px Arial,sans-serif; text-transform:uppercase; }
+    input[type=file] { display:block; width:100%; min-height:42px; padding:9px; border:1px solid var(--line); background:#fafcfb; color:var(--ink); font:12px Arial,sans-serif; }
+    button { min-height:42px; border:0; padding:0 17px; background:var(--green); color:#fff; cursor:pointer; font:700 12px Arial,sans-serif; }
+    button:hover { background:var(--green-dark); } button:disabled { opacity:.55; cursor:wait; }
+    .status { min-height:22px; margin:12px 2px 22px; color:var(--red); font:13px Arial,sans-serif; }
+    .summary { display:none; grid-template-columns:repeat(3,1fr); gap:1px; margin:12px 0 22px; border:1px solid var(--line); background:var(--line); }
+    .summary.visible { display:grid; }
+    .summary div { padding:12px 15px; background:var(--paper); }
+    .summary small { display:block; color:var(--muted); font:10px Arial,sans-serif; text-transform:uppercase; }
+    .summary strong { display:block; margin-top:5px; color:var(--green-dark); font-size:22px; }
+    .results { display:grid; gap:20px; }
+    section { min-width:0; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:0 0 10px; }
+    h2 { margin:0; font-size:20px; font-weight:500; }
+    .count { color:var(--muted); font:12px Arial,sans-serif; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); background:var(--paper); }
+    table { width:100%; min-width:540px; border-collapse:collapse; font:13px Arial,sans-serif; }
+    th,td { padding:10px 12px; border-bottom:1px solid #e7ece9; text-align:left; }
+    th { position:sticky; top:0; background:#e4eee9; color:#3b5550; font-size:10px; text-transform:uppercase; }
+    tbody tr:last-child td { border-bottom:0; }
+    td.empty { padding:24px; color:var(--muted); text-align:center; }
+    .actions { display:none; justify-content:flex-end; padding-top:16px; }
+    .actions.visible { display:flex; }
+    @media(max-width:760px) { header { align-items:flex-start; flex-direction:column; } .header-note { display:none; } .upload-band { grid-template-columns:1fr; } .upload-band button { width:100%; } .summary { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header><div><div class="wordmark">Admission data / reconciliation</div><h1>Excel Match Desk</h1></div><div class="header-note">Name + ACPC application number</div></header>
+  <main>
+    <form id="match-form" class="upload-band">
+      <div><label for="left-file">First sheet</label><input id="left-file" name="left" type="file" accept=".xlsx" required></div>
+      <div><label for="right-file">Second sheet</label><input id="right-file" name="right" type="file" accept=".xlsx" required></div>
+      <button id="run-match" type="submit">Compare sheets</button>
+    </form>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <div id="summary" class="summary"><div><small>Matches</small><strong id="match-count">0</strong></div><div><small>Duplicates</small><strong id="duplicate-count">0</strong></div><div><small>Not reporting fees</small><strong id="fee-count">0</strong></div></div>
+    <div id="results" class="results"></div>
+    <div id="actions" class="actions"><button id="download" type="button">Download Excel report</button></div>
+  </main>
+  <script>
+    const form=document.getElementById('match-form'); const status=document.getElementById('status'); const button=document.getElementById('run-match');
+    const results=document.getElementById('results'); const summary=document.getElementById('summary'); const actions=document.getElementById('actions');
+    const escapeHtml=(value)=>String(value??'').replace(/[&<>"']/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    function renderTable(title,rows,id) {
+      const columns=['name','acpc','fees'];
+      const body=rows.length?rows.map(row=>`<tr>${columns.map(column=>`<td>${escapeHtml(row[column])}</td>`).join('')}</tr>`).join(''):'<tr><td class="empty" colspan="3">No records</td></tr>';
+      return `<section><div class="section-head"><h2>${title}</h2><span class="count">${rows.length} records</span></div><div class="table-wrap"><table aria-label="${title}"><thead><tr><th>Name</th><th>ACPC application number</th><th>Fees</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    }
+    function formData() { const data=new FormData(); data.append('left',document.getElementById('left-file').files[0]); data.append('right',document.getElementById('right-file').files[0]); return data; }
+    form.addEventListener('submit',async(event)=>{
+      event.preventDefault(); status.textContent=''; button.disabled=true; button.textContent='Comparing...'; actions.classList.remove('visible');
+      try {
+        const response=await fetch('/api/match',{method:'POST',body:formData()}); const payload=await response.json(); if(!response.ok)throw new Error(payload.error||'Could not compare sheets.');
+        document.getElementById('match-count').textContent=payload.matches.length; document.getElementById('duplicate-count').textContent=payload.duplicates.length; document.getElementById('fee-count').textContent=payload.not_reporting_fees.length;
+        summary.classList.add('visible'); results.innerHTML=renderTable('Matches',payload.matches,'matches')+renderTable('Duplicates',payload.duplicates,'duplicates')+renderTable('Not reporting fees',payload.not_reporting_fees,'not-reporting-fees'); actions.classList.add('visible');
+      } catch(error) { status.textContent=error.message; results.innerHTML=''; summary.classList.remove('visible'); }
+      finally { button.disabled=false; button.textContent='Compare sheets'; }
+    });
+    document.getElementById('download').addEventListener('click',async()=>{
+      status.textContent='';
+      try { const response=await fetch('/api/match/export.xlsx',{method:'POST',body:formData()}); if(!response.ok){const error=await response.json();throw new Error(error.error||'Could not create report.');} const blob=await response.blob(); const url=URL.createObjectURL(blob); const link=document.createElement('a'); link.href=url; link.download='admission_report.xlsx'; link.click(); URL.revokeObjectURL(url); }
+      catch(error) { status.textContent=error.message; }
+    });
+  </script>
+</body>
+</html>

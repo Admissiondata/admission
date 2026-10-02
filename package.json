@@ -3,9 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "python -m streamlit run streamlit_app.py",
-    "navratri": "python3 server.py",
-    "salary": "python3 salary_server.py",
-    "test": "pytest -q"
+    "dev": "node matching-server.js",
+    "navratri": "node navratri-server.js",
+    "salary": "node salary-server.js",
+    "test": "node --test tests-node/*.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.5",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "multer": "^2.4.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.0"
   }
 }

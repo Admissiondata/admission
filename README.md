@@ -1,5 +1,14 @@
 # admission
 
+## Run the apps
+
+Install the Node.js dependencies once with `npm install`.
+
+- `npm run salary` starts Faculty Salary Desk on port 5001.
+- `npm run navratri` starts Navratri Garba Pass on port 5000.
+- `npm run dev` starts Admission Match Desk on port 8501.
+- `npm test` runs the Node.js test suite.
+
 ## Faculty Salary Desk
 
 The salary application is available separately from the existing Navratri pass app:
@@ -8,7 +17,7 @@ The salary application is available separately from the existing Navratri pass a
 npm run salary
 ```
 
-Open `http://localhost:5001`. It stores salary data in `salary_data.db`, supports department and faculty setup, configurable working weekdays, monthly attendance, live salary calculation, finalization, and an audit log. On the dashboard, select **Import June 2026 sheet** and choose the workbook containing the `June -2026` tab to import its visiting staff, attendance, and payable salary. The dashboard then opens on that imported period. The reusable calculation rules live in `salary_service.py`.
+Open the salary app at https://jubilant-invention-4qgg74gqxrvj26pp-5001.app.github.dev/ (or `http://localhost:5001` locally). It stores salary data in `salary_data.db`, supports department and faculty setup, configurable working weekdays, monthly attendance, live salary calculation, finalization, and an audit log. On the dashboard, select **Import June 2026 sheet** and choose the workbook containing the `June -2026` tab to import its visiting staff, attendance, and payable salary. The dashboard then opens on that imported period.
 
 ## નવરાત્રી ગરબા પાસ ૨૦૨૬
 
@@ -17,7 +26,7 @@ Web app — રજીસ્ટ્રેશન ફોર્મ, પાસ જન�
 ### ચલાવવા
 
 ```
-pip install flask
+npm install
 npm run navratri
 ```
 
